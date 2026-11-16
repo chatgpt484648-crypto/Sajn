@@ -1,7 +1,12 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import crypto from 'node:crypto';
 import type { Response } from 'express';
+import { sealJson, unsealJson } from './cryptoVault.ts';
+import {
+  HAS_REMOTE_KV,
+  readLocalStateRawSync,
+  readStateRawAsync,
+  writeStateRawAsync,
+} from './storageAdapter.ts';
 import type {
   AccountSummary,
   ActiveNumberRecord,
@@ -14,13 +19,26 @@ import type {
   TechSmsSyncStatus,
 } from '../src/types/mirror.ts';
 
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-const STATE_FILE = path.join(DATA_DIR, 'mirror-state.json');
+export interface SealedBuyerPayload {
+  v: 2;
+  id: string;
+  accountKey: string;
+  accountName: string;
+  phoneNumber: string;
+  buyerLabel: string;
+  onlyAfterCreated: boolean;
+  createdAt: string;
+  email?: string;
+  refreshToken?: string;
+  accessToken?: string;
+  expiresAt?: number;
+}
 
 interface MultiAccountDiskStore {
   activeAccountKey: string;
   accounts: Record<string, MirrorState>;
   buyerLinks: BuyerLink[];
+  revokedLinkIds?: string[];
 }
 
 function normalizeAccountKey(name: string): string {
@@ -52,29 +70,9 @@ function createEmptyAccountState(accountName = 'Ahmad Amir'): MirrorState {
   };
 }
 
-const DEFAULT_STORE: MultiAccountDiskStore = {
-  activeAccountKey: 'ahmad-amir',
-  accounts: {
-    'ahmad-amir': createEmptyAccountState('Ahmad Amir'),
-  },
-  buyerLinks: [],
-};
-
-let syncStatus: TechSmsSyncStatus = {
-  connected: false,
-  email: null,
-  lastSyncAt: null,
-  lastError: null,
-  pollingIntervalMs: 4000,
-};
-
-const sseClients = new Set<Response>();
-const buyerSseClients = new Map<string, Set<Response>>();
-
-function loadStoreFromDisk(): MultiAccountDiskStore {
-  try {
-    if (fs.existsSync(STATE_FILE)) {
-      const raw = fs.readFileSync(STATE_FILE, 'utf-8');
+function parseStoreJson(raw: string | null): MultiAccountDiskStore {
+  if (raw) {
+    try {
       const parsed = JSON.parse(raw) as Partial<MultiAccountDiskStore> &
         Partial<MirrorState>;
 
@@ -106,6 +104,9 @@ function loadStoreFromDisk(): MultiAccountDiskStore {
           activeAccountKey: activeKey,
           accounts,
           buyerLinks: Array.isArray(parsed.buyerLinks) ? parsed.buyerLinks : [],
+          revokedLinkIds: Array.isArray(parsed.revokedLinkIds)
+            ? parsed.revokedLinkIds
+            : [],
         };
       }
 
@@ -129,30 +130,61 @@ function loadStoreFromDisk(): MultiAccountDiskStore {
             },
           },
           buyerLinks: [],
+          revokedLinkIds: [],
         };
       }
+    } catch (err) {
+      console.error('Failed to parse mirror-state.json:', err);
     }
-  } catch (err) {
-    console.error('Failed to read mirror-state.json:', err);
   }
+
   return {
-    activeAccountKey: DEFAULT_STORE.activeAccountKey,
-    accounts: { ...DEFAULT_STORE.accounts },
+    activeAccountKey: 'ahmad-amir',
+    accounts: {
+      'ahmad-amir': createEmptyAccountState('Ahmad Amir'),
+    },
     buyerLinks: [],
+    revokedLinkIds: [],
   };
 }
 
-let store: MultiAccountDiskStore = loadStoreFromDisk();
+let store: MultiAccountDiskStore = parseStoreJson(readLocalStateRawSync());
+let hydratedFromRemote = false;
+let pendingWrite: Promise<void> = Promise.resolve();
 
-function saveStoreToDisk(nextStore: MultiAccountDiskStore): void {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+let syncStatus: TechSmsSyncStatus = {
+  connected: false,
+  email: null,
+  lastSyncAt: null,
+  lastError: null,
+  pollingIntervalMs: 4000,
+};
+
+const sseClients = new Set<Response>();
+const buyerSseClients = new Map<string, Set<Response>>();
+
+export async function ensureStoreLoaded(): Promise<void> {
+  if (!HAS_REMOTE_KV && hydratedFromRemote) return;
+  if (HAS_REMOTE_KV) {
+    const raw = await readStateRawAsync();
+    if (raw) {
+      store = parseStoreJson(raw);
     }
-    fs.writeFileSync(STATE_FILE, JSON.stringify(nextStore, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Failed to persist mirror-state.json:', err);
   }
+  hydratedFromRemote = true;
+}
+
+function persistStore(nextStore: MultiAccountDiskStore): void {
+  const serialized = JSON.stringify(nextStore, null, 2);
+  pendingWrite = pendingWrite
+    .then(() => writeStateRawAsync(serialized))
+    .catch((err) => {
+      console.error('Failed to persist mirror state:', err);
+    });
+}
+
+export async function flushPersistence(): Promise<void> {
+  await pendingWrite;
 }
 
 export function setTechSmsSyncStatus(next: Partial<TechSmsSyncStatus>): void {
@@ -188,9 +220,40 @@ export function getMirrorState(): MirrorState {
   };
 }
 
+export function unsealBuyerToken(token: string): SealedBuyerPayload | null {
+  const unsealed = unsealJson<SealedBuyerPayload>(token);
+  if (!unsealed || unsealed.v !== 2 || !unsealed.phoneNumber) return null;
+  if (store.revokedLinkIds?.includes(unsealed.id)) return null;
+  return unsealed;
+}
+
+export function mergeBuyerLinksFromCookie(cookieLinks: BuyerLink[]): void {
+  if (!Array.isArray(cookieLinks) || cookieLinks.length === 0) return;
+  const revoked = new Set(store.revokedLinkIds ?? []);
+  const byToken = new Map<string, BuyerLink>();
+  for (const existing of store.buyerLinks) {
+    byToken.set(existing.token, existing);
+  }
+  for (const link of cookieLinks) {
+    if (!link?.token || !link?.phoneNumber) continue;
+    const unsealed = unsealJson<SealedBuyerPayload>(link.token);
+    if (unsealed && revoked.has(unsealed.id)) continue;
+    if (!byToken.has(link.token)) {
+      byToken.set(link.token, link);
+    }
+  }
+  store.buyerLinks = Array.from(byToken.values());
+}
+
+export function getBuyerLinksForCookie(): BuyerLink[] {
+  return store.buyerLinks
+    .filter((link) => link.accountKey === store.activeAccountKey)
+    .slice(0, 6);
+}
+
 export function getBuyerPortalData(token: string): BuyerPortalPayload {
-  const link = store.buyerLinks.find((item) => item.token === token);
-  if (!link) {
+  const unsealed = unsealJson<SealedBuyerPayload>(token);
+  if (unsealed && store.revokedLinkIds?.includes(unsealed.id)) {
     return {
       valid: false,
       active: false,
@@ -201,24 +264,60 @@ export function getBuyerPortalData(token: string): BuyerPortalPayload {
     };
   }
 
-  if (!link.active) {
+  const storedLink = store.buyerLinks.find((item) => item.token === token);
+  const resolvedLink:
+    | {
+        accountKey: string;
+        phoneNumber: string;
+        buyerLabel: string;
+        onlyAfterCreated: boolean;
+        active: boolean;
+        createdAt: string;
+      }
+    | null = storedLink
+    ? storedLink
+    : unsealed && unsealed.v === 2 && unsealed.phoneNumber
+      ? {
+          accountKey: unsealed.accountKey,
+          phoneNumber: unsealed.phoneNumber,
+          buyerLabel: unsealed.buyerLabel || '',
+          onlyAfterCreated: Boolean(unsealed.onlyAfterCreated),
+          active: true,
+          createdAt: unsealed.createdAt,
+        }
+      : null;
+
+  if (!resolvedLink) {
     return {
-      valid: true,
+      valid: false,
       active: false,
-      phoneNumber: link.phoneNumber,
-      buyerLabel: link.buyerLabel,
-      createdAt: link.createdAt,
+      phoneNumber: '',
+      buyerLabel: '',
+      createdAt: '',
       messages: [],
     };
   }
 
-  const account = store.accounts[link.accountKey];
-  const targetNormalized = normalizePhone(link.phoneNumber);
+  if (!resolvedLink.active) {
+    return {
+      valid: true,
+      active: false,
+      phoneNumber: resolvedLink.phoneNumber,
+      buyerLabel: resolvedLink.buyerLabel,
+      createdAt: resolvedLink.createdAt,
+      messages: [],
+    };
+  }
+
+  const account = store.accounts[resolvedLink.accountKey];
+  const targetNormalized = normalizePhone(resolvedLink.phoneNumber);
 
   const filteredMessages = (account?.messages ?? [])
     .filter((msg) => {
       if (normalizePhone(msg.destination) !== targetNormalized) return false;
-      if (link.onlyAfterCreated && msg.firstSeenAt < link.createdAt) return false;
+      if (resolvedLink.onlyAfterCreated && msg.firstSeenAt < resolvedLink.createdAt) {
+        return false;
+      }
       return true;
     })
     .map((msg) => ({
@@ -232,9 +331,9 @@ export function getBuyerPortalData(token: string): BuyerPortalPayload {
   return {
     valid: true,
     active: true,
-    phoneNumber: link.phoneNumber,
-    buyerLabel: link.buyerLabel,
-    createdAt: link.createdAt,
+    phoneNumber: resolvedLink.phoneNumber,
+    buyerLabel: resolvedLink.buyerLabel,
+    createdAt: resolvedLink.createdAt,
     messages: filteredMessages,
   };
 }
@@ -296,21 +395,54 @@ export function createBuyerLink(
   phoneNumber: string,
   buyerLabel = '',
   onlyAfterCreated = false,
+  sessionMeta?: {
+    email?: string;
+    refreshToken?: string;
+    accessToken?: string;
+    expiresAt?: number;
+    accountName?: string;
+  } | null,
 ): BuyerLink {
   const cleanNumber = phoneNumber.trim();
-  const token = crypto.randomBytes(8).toString('hex');
+  const cleanLabel = buyerLabel.trim();
+  const createdAt = new Date().toISOString();
+  const id = crypto.randomBytes(6).toString('hex');
+  const currentAccount = store.accounts[store.activeAccountKey];
+
+  const sealedPayload: SealedBuyerPayload = {
+    v: 2,
+    id,
+    accountKey: store.activeAccountKey,
+    accountName:
+      sessionMeta?.accountName || currentAccount?.accountName || 'Ahmad Amir',
+    phoneNumber: cleanNumber,
+    buyerLabel: cleanLabel,
+    onlyAfterCreated: Boolean(onlyAfterCreated),
+    createdAt,
+    ...(sessionMeta?.refreshToken && sessionMeta?.email
+      ? {
+          email: sessionMeta.email,
+          refreshToken: sessionMeta.refreshToken,
+          accessToken: sessionMeta.accessToken,
+          expiresAt: sessionMeta.expiresAt,
+        }
+      : {}),
+  };
+
+  const token = sealJson(sealedPayload);
+
   const link: BuyerLink = {
     token,
     accountKey: store.activeAccountKey,
     phoneNumber: cleanNumber,
-    buyerLabel: buyerLabel.trim(),
+    buyerLabel: cleanLabel,
     onlyAfterCreated: Boolean(onlyAfterCreated),
     active: true,
-    createdAt: new Date().toISOString(),
+    createdAt,
   };
 
   store.buyerLinks = [link, ...store.buyerLinks];
-  saveStoreToDisk(store);
+  persistStore(store);
   broadcastState();
   return link;
 }
@@ -319,8 +451,29 @@ export function updateBuyerLink(
   token: string,
   updates: { active?: boolean; onlyAfterCreated?: boolean; buyerLabel?: string },
 ): BuyerLink | null {
-  const idx = store.buyerLinks.findIndex((item) => item.token === token);
-  if (idx === -1) return null;
+  let idx = store.buyerLinks.findIndex((item) => item.token === token);
+  if (idx === -1) {
+    const unsealed = unsealJson<SealedBuyerPayload>(token);
+    if (
+      unsealed &&
+      unsealed.v === 2 &&
+      !store.revokedLinkIds?.includes(unsealed.id)
+    ) {
+      const recovered: BuyerLink = {
+        token,
+        accountKey: unsealed.accountKey,
+        phoneNumber: unsealed.phoneNumber,
+        buyerLabel: unsealed.buyerLabel || '',
+        onlyAfterCreated: Boolean(unsealed.onlyAfterCreated),
+        active: true,
+        createdAt: unsealed.createdAt,
+      };
+      store.buyerLinks = [recovered, ...store.buyerLinks];
+      idx = 0;
+    } else {
+      return null;
+    }
+  }
 
   const current = store.buyerLinks[idx];
   const next: BuyerLink = {
@@ -337,7 +490,7 @@ export function updateBuyerLink(
   };
 
   store.buyerLinks[idx] = next;
-  saveStoreToDisk(store);
+  persistStore(store);
   broadcastState();
   return next;
 }
@@ -345,8 +498,18 @@ export function updateBuyerLink(
 export function deleteBuyerLink(token: string): boolean {
   const prevLen = store.buyerLinks.length;
   store.buyerLinks = store.buyerLinks.filter((item) => item.token !== token);
-  if (store.buyerLinks.length === prevLen) return false;
-  saveStoreToDisk(store);
+  const unsealed = unsealJson<SealedBuyerPayload>(token);
+  let revokedAdded = false;
+  if (unsealed && unsealed.id) {
+    const set = new Set(store.revokedLinkIds ?? []);
+    if (!set.has(unsealed.id)) {
+      set.add(unsealed.id);
+      store.revokedLinkIds = Array.from(set).slice(-200);
+      revokedAdded = true;
+    }
+  }
+  if (store.buyerLinks.length === prevLen && !revokedAdded) return false;
+  persistStore(store);
   broadcastState();
   return true;
 }
@@ -369,7 +532,7 @@ function extractOtpFallback(message: string): string {
 export function switchActiveAccount(accountKey: string): MirrorState {
   if (store.accounts[accountKey]) {
     store.activeAccountKey = accountKey;
-    saveStoreToDisk(store);
+    persistStore(store);
     broadcastState();
   }
   return getMirrorState();
@@ -491,7 +654,7 @@ export function mergeDirectTechSmsSync(params: {
   };
 
   if (changed) {
-    saveStoreToDisk(store);
+    persistStore(store);
     broadcastState();
   }
 
@@ -555,7 +718,6 @@ export function mergeOcrResult(
     return b.firstSeenAt.localeCompare(a.firstSeenAt);
   });
 
-  // Merge My Numbers / Active Numbers cleanly without wiping when scanning dashboard overview
   let mergedActiveNumbers: ActiveNumberRecord[] =
     targetAccount.explicitActiveNumbers;
   if (payload.activeNumbers.length > 0) {
@@ -618,7 +780,7 @@ export function mergeOcrResult(
     scanHistory: [logEntry, ...targetAccount.scanHistory].slice(0, 30),
   };
 
-  saveStoreToDisk(store);
+  persistStore(store);
   broadcastState();
 
   return {
@@ -632,7 +794,7 @@ export function clearMirrorState(): MirrorState {
   const currentName =
     store.accounts[store.activeAccountKey]?.accountName || 'Ahmad Amir';
   store.accounts[store.activeAccountKey] = createEmptyAccountState(currentName);
-  saveStoreToDisk(store);
+  persistStore(store);
   broadcastState();
   return getMirrorState();
 }

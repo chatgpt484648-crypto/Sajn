@@ -94,50 +94,73 @@ function SellerAdminApp() {
     }, 3500);
   }, []);
 
+  const applyIncomingState = useCallback(
+    (nextState: MirrorState, notifyNew = true) => {
+      const prevCount = previousMsgCountRef.current;
+      if (notifyNew && nextState.messages.length > prevCount && prevCount > 0) {
+        if (soundEnabledRef.current) {
+          playNewSmsChime();
+        }
+        showNotice(
+          `${nextState.messages.length - prevCount} new inbound SMS received`,
+        );
+      }
+      previousMsgCountRef.current = nextState.messages.length;
+      setState(nextState);
+    },
+    [showNotice],
+  );
+
   useEffect(() => {
     let active = true;
+    let pollInFlight = false;
 
-    fetch('/api/state')
-      .then((res) => res.json())
-      .then((data: MirrorState) => {
+    const pullLatestState = async (live = true) => {
+      if (!active || pollInFlight) return;
+      pollInFlight = true;
+      try {
+        const res = await fetch(live ? '/api/state?live=1' : '/api/state');
+        if (!res.ok) return;
+        const nextState = (await res.json()) as MirrorState;
         if (!active) return;
-        previousMsgCountRef.current = data.messages.length;
-        setState(data);
-      })
-      .catch(() => {});
+        applyIncomingState(nextState, previousMsgCountRef.current > 0);
+        setSseConnected(true);
+      } catch {
+        // Ignore transient network errors
+      } finally {
+        pollInFlight = false;
+      }
+    };
+
+    pullLatestState(true);
 
     const es = new EventSource('/api/stream');
     es.onopen = () => {
       if (active) setSseConnected(true);
     };
     es.onerror = () => {
-      if (active) setSseConnected(false);
+      // Serverless environments close SSE streams; polling keeps state live
     };
     es.addEventListener('state', (event) => {
       if (!active) return;
       try {
         const nextState = JSON.parse((event as MessageEvent).data) as MirrorState;
-        const prevCount = previousMsgCountRef.current;
-        if (nextState.messages.length > prevCount && prevCount > 0) {
-          if (soundEnabledRef.current) {
-            playNewSmsChime();
-          }
-          showNotice(
-            `${nextState.messages.length - prevCount} new inbound SMS received`,
-          );
-        }
-        previousMsgCountRef.current = nextState.messages.length;
-        setState(nextState);
+        applyIncomingState(nextState, true);
       } catch {
         // Ignore malformed SSE payload
       }
     });
 
+    const pollTimer = setInterval(() => {
+      pullLatestState(true);
+    }, 4000);
+
     return () => {
       active = false;
+      clearInterval(pollTimer);
       es.close();
     };
-  }, [showNotice]);
+  }, [applyIncomingState]);
 
   useEffect(() => {
     if (activeTab === 'sync' && previewVideoRef.current && mediaStreamRef.current) {
@@ -166,12 +189,17 @@ function SellerAdminApp() {
         const data = (await res.json()) as {
           ok?: boolean;
           error?: string;
+          state?: MirrorState;
           newMessagesAdded?: number;
           totalExtractedMessages?: number;
         };
 
         if (!res.ok) {
           throw new Error(data.error || 'OCR request failed.');
+        }
+
+        if (data.state) {
+          applyIncomingState(data.state, false);
         }
 
         lastOcrTimestampRef.current = Date.now();
@@ -346,11 +374,13 @@ function SellerAdminApp() {
       const res = await fetch('/api/ocr/scan-attached', { method: 'POST' });
       const data = (await res.json()) as {
         error?: string;
+        state?: MirrorState;
         totalExtractedMessages?: number;
       };
       if (!res.ok) {
         throw new Error(data.error || 'Failed to scan attached capture.');
       }
+      if (data.state) applyIncomingState(data.state, false);
       showNotice(`Scanned Dashboard capture: ${data.totalExtractedMessages ?? 0} SMS extracted`);
     } catch (err) {
       setOcrError(err instanceof Error ? err.message : 'Failed to scan attached capture.');
@@ -369,11 +399,13 @@ function SellerAdminApp() {
       const res = await fetch('/api/ocr/scan-my-numbers', { method: 'POST' });
       const data = (await res.json()) as {
         error?: string;
+        state?: MirrorState;
         extracted?: { activeNumbers?: unknown[] };
       };
       if (!res.ok) {
         throw new Error(data.error || 'Failed to scan My Numbers capture.');
       }
+      if (data.state) applyIncomingState(data.state, false);
       const count = data.extracted?.activeNumbers?.length ?? 0;
       showNotice(`Scanned My Numbers capture: ${count} active numbers loaded`);
     } catch (err) {
@@ -399,11 +431,13 @@ function SellerAdminApp() {
       const data = (await res.json()) as {
         ok?: boolean;
         error?: string;
+        state?: MirrorState;
         session?: { accountName: string };
       };
       if (!res.ok) {
         throw new Error(data.error || 'Failed to connect TechSMS account.');
       }
+      if (data.state) applyIncomingState(data.state, false);
       showNotice(
         `Connected ${data.session?.accountName || email} — auto-syncing every 4s`,
       );
@@ -422,7 +456,9 @@ function SellerAdminApp() {
     setIsSyncingNow(true);
     try {
       const res = await fetch('/api/techsms/sync', { method: 'POST' });
+      const data = (await res.json()) as { ok?: boolean; state?: MirrorState };
       if (!res.ok) throw new Error('Sync failed.');
+      if (data.state) applyIncomingState(data.state, true);
       showNotice('Synced latest My Numbers & inbound SMS');
     } catch (err) {
       setOcrError(err instanceof Error ? err.message : 'Sync failed.');
@@ -432,7 +468,11 @@ function SellerAdminApp() {
   };
 
   const handleDisconnectTechSms = async () => {
-    await fetch('/api/techsms/disconnect', { method: 'POST' });
+    const res = await fetch('/api/techsms/disconnect', { method: 'POST' });
+    if (res.ok) {
+      const data = (await res.json()) as { state?: MirrorState };
+      if (data.state) applyIncomingState(data.state, false);
+    }
     showNotice('Disconnected TechSMS auto-sync');
   };
 
@@ -443,9 +483,11 @@ function SellerAdminApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accountKey }),
       });
+      const data = (await res.json()) as { state?: MirrorState };
       if (!res.ok) {
         throw new Error('Failed to switch account.');
       }
+      if (data.state) applyIncomingState(data.state, false);
     } catch (err) {
       setOcrError(err instanceof Error ? err.message : 'Failed to switch account.');
     }
@@ -462,10 +504,16 @@ function SellerAdminApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phoneNumber, buyerLabel, onlyAfterCreated }),
       });
-      const data = (await res.json()) as { ok?: boolean; link?: BuyerLink; error?: string };
+      const data = (await res.json()) as {
+        ok?: boolean;
+        link?: BuyerLink;
+        state?: MirrorState;
+        error?: string;
+      };
       if (!res.ok || !data.link) {
         throw new Error(data.error || 'Failed to create buyer link.');
       }
+      if (data.state) applyIncomingState(data.state, false);
       showNotice(`Buyer OTP link copied for ${phoneNumber}`);
       return data.link;
     } catch (err) {
@@ -481,7 +529,9 @@ function SellerAdminApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active }),
       });
+      const data = (await res.json()) as { state?: MirrorState };
       if (!res.ok) throw new Error('Failed to update buyer link.');
+      if (data.state) applyIncomingState(data.state, false);
       showNotice(active ? 'Buyer OTP link resumed' : 'Buyer OTP link paused');
     } catch (err) {
       setOcrError(err instanceof Error ? err.message : 'Failed to update buyer link.');
@@ -493,7 +543,9 @@ function SellerAdminApp() {
       const res = await fetch(`/api/buyer-links/${encodeURIComponent(token)}`, {
         method: 'DELETE',
       });
+      const data = (await res.json()) as { state?: MirrorState };
       if (!res.ok) throw new Error('Failed to delete buyer link.');
+      if (data.state) applyIncomingState(data.state, false);
       showNotice('Buyer OTP link deleted');
     } catch (err) {
       setOcrError(err instanceof Error ? err.message : 'Failed to delete buyer link.');
@@ -502,7 +554,9 @@ function SellerAdminApp() {
 
   const handleClearHistory = async () => {
     try {
-      await fetch('/api/state/clear', { method: 'POST' });
+      const res = await fetch('/api/state/clear', { method: 'POST' });
+      const data = (await res.json()) as { state?: MirrorState };
+      if (data.state) applyIncomingState(data.state, false);
       showNotice('Synced mirror records cleared');
     } catch {
       setOcrError('Failed to clear stored records.');

@@ -23,25 +23,48 @@ export const BuyerOtpPortal: React.FC<BuyerOtpPortalProps> = ({ token }) => {
 
   useEffect(() => {
     let active = true;
+    let pollInFlight = false;
 
-    fetch(`/api/buyer/${encodeURIComponent(token)}`)
-      .then((res) => res.json())
-      .then((payload: BuyerPortalPayload) => {
+    const applyPayload = (nextPayload: BuyerPortalPayload, notify: boolean) => {
+      if (
+        notify &&
+        nextPayload.messages.length > prevCountRef.current &&
+        prevCountRef.current >= 0 &&
+        soundRef.current
+      ) {
+        playNewSmsChime();
+      }
+      prevCountRef.current = nextPayload.messages.length;
+      setData(nextPayload);
+      setLoading(false);
+    };
+
+    const pullLive = async (notify: boolean) => {
+      if (!active || pollInFlight) return;
+      pollInFlight = true;
+      try {
+        const res = await fetch(
+          `/api/buyer/${encodeURIComponent(token)}?live=1`,
+        );
+        const payload = (await res.json()) as BuyerPortalPayload;
         if (!active) return;
-        prevCountRef.current = payload.messages.length;
-        setData(payload);
-        setLoading(false);
-      })
-      .catch(() => {
+        applyPayload(payload, notify);
+        setSseConnected(true);
+      } catch {
         if (active) setLoading(false);
-      });
+      } finally {
+        pollInFlight = false;
+      }
+    };
+
+    pullLive(false);
 
     const es = new EventSource(`/api/buyer/${encodeURIComponent(token)}/stream`);
     es.onopen = () => {
       if (active) setSseConnected(true);
     };
     es.onerror = () => {
-      if (active) setSseConnected(false);
+      // Serverless environments close SSE streams; polling keeps OTPs live
     };
     es.addEventListener('buyer', (event) => {
       if (!active) return;
@@ -49,23 +72,19 @@ export const BuyerOtpPortal: React.FC<BuyerOtpPortalProps> = ({ token }) => {
         const nextPayload = JSON.parse(
           (event as MessageEvent).data,
         ) as BuyerPortalPayload;
-        if (
-          nextPayload.messages.length > prevCountRef.current &&
-          prevCountRef.current >= 0 &&
-          soundRef.current
-        ) {
-          playNewSmsChime();
-        }
-        prevCountRef.current = nextPayload.messages.length;
-        setData(nextPayload);
-        setLoading(false);
+        applyPayload(nextPayload, true);
       } catch {
         // Ignore malformed SSE payload
       }
     });
 
+    const pollTimer = setInterval(() => {
+      pullLive(true);
+    }, 4000);
+
     return () => {
       active = false;
+      clearInterval(pollTimer);
       es.close();
     };
   }, [token]);

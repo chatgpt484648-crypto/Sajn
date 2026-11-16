@@ -5,7 +5,7 @@ function getGeminiClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error(
-      'GEMINI_API_KEY is not configured. Please add your Gemini API key in Settings > Secrets.',
+      'Screenshot OCR requires GEMINI_API_KEY. For zero-key live sync every 4 seconds, use Connect Account on the Home tab.',
     );
   }
 

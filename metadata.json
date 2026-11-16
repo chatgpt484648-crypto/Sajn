@@ -1,0 +1,8 @@
+{
+  "name": "TechSMS OCR Mirror",
+  "description": "Real-time OCR mirror for TechSMS active numbers and inbound SMS messages without API access or payout clutter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

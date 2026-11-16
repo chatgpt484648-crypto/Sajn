@@ -1,0 +1,411 @@
+{
+  "activeAccountKey": "ahmad-amir",
+  "accounts": {
+    "ahmad-amir": {
+      "accountKey": "ahmad-amir",
+      "accountName": "Ahmad Amir",
+      "accountStatus": "Operational · Full Access",
+      "sourceUrl": "https://techsms.org/dashboard",
+      "reportedActiveNumbersCount": 26,
+      "reportedTodaysSmsCount": 0,
+      "explicitActiveNumbers": [
+        {
+          "number": "+447378178426",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447378184522",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447868213665",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447378179204",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447378178814",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447723174425",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447378184901",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447378188865",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447868234479",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447428514030",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447723172992",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447428561359",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447428503105",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447428561264",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447428561296",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447428559743",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447378182421",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447378187941",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447868216131",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447868247265",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-15",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447723175304",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-13",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447378185713",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-13",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447868242430",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-13",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447428584525",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-13",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447400367372",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-13",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        },
+        {
+          "number": "+447428525530",
+          "country": "United Kingdom",
+          "service": "United Kingdom S08 TSMS (Exclusive)",
+          "range": "United Kingdom S08 TSMS (Exclusive)",
+          "term": "30/15",
+          "allocatedAt": "2026-11-13",
+          "expiresAt": "2026-11-29 23:41",
+          "status": "Active",
+          "lastSeenAt": "2026-11-15T23:50:37.755Z"
+        }
+      ],
+      "messages": [
+        {
+          "id": "0b292b22f15c8d",
+          "time": "2026-11-15T21:25:03",
+          "destination": "+447868242430",
+          "senderId": "1xbet.com",
+          "message": "Do not share your confirmation code with anyone: 90279",
+          "otpCode": "90279",
+          "firstSeenAt": "2026-11-15T22:27:14.776Z"
+        },
+        {
+          "id": "fad405f63c4adf",
+          "time": "2026-11-15T21:22:46",
+          "destination": "+447400367372",
+          "senderId": "1xbet.com",
+          "message": "Do not share your confirmation code with anyone: 83403",
+          "otpCode": "83403",
+          "firstSeenAt": "2026-11-15T22:27:14.776Z"
+        },
+        {
+          "id": "16c902411b69bf",
+          "time": "2026-11-15T21:21:11",
+          "destination": "+447868224345",
+          "senderId": "1xbet.com",
+          "message": "Do not share your confirmation code with anyone: 57743",
+          "otpCode": "57743",
+          "firstSeenAt": "2026-11-15T22:27:14.776Z"
+        },
+        {
+          "id": "767b72003fc631",
+          "time": "2026-11-15T21:20:21",
+          "destination": "+447453513471",
+          "senderId": "1xbet.com",
+          "message": "Do not share your confirmation code with anyone: 47122",
+          "otpCode": "47122",
+          "firstSeenAt": "2026-11-15T22:27:14.776Z"
+        },
+        {
+          "id": "4f326e2f314cd5",
+          "time": "2026-11-15T21:13:45",
+          "destination": "+447428514030",
+          "senderId": "eBay",
+          "message": "eBay: Your security code is 139778. Do not share this code.",
+          "otpCode": "139778",
+          "firstSeenAt": "2026-11-15T22:27:14.776Z"
+        },
+        {
+          "id": "7894db856ff8f4",
+          "time": "2026-11-15T21:12:37",
+          "destination": "+447378180865",
+          "senderId": "eBay",
+          "message": "eBay: Your security code is 345667. Do not share this code.",
+          "otpCode": "345667",
+          "firstSeenAt": "2026-11-15T23:35:32.906Z"
+        },
+        {
+          "id": "dba004589a6ef6",
+          "time": "2026-11-15T21:12:34",
+          "destination": "+447428514030",
+          "senderId": "eBay",
+          "message": "eBay: Your security code is 996217. Do not share this code.",
+          "otpCode": "996217",
+          "firstSeenAt": "2026-11-15T23:35:32.906Z"
+        }
+      ],
+      "lastSyncedAt": "2026-11-15T23:50:37.755Z",
+      "totalScans": 5,
+      "scanHistory": [
+        {
+          "id": "d8570b6c",
+          "timestamp": "2026-11-15T23:50:37.755Z",
+          "sourceMode": "attached-capture",
+          "newMessagesCount": 0,
+          "activeNumbersCount": 26,
+          "summary": "[Ahmad Amir] Extracted 26 numbers & 0 new SMS"
+        },
+        {
+          "id": "701e1094",
+          "timestamp": "2026-11-15T23:36:38.730Z",
+          "sourceMode": "live-tab",
+          "newMessagesCount": 0,
+          "activeNumbersCount": 0,
+          "summary": "[Ahmad Amir] Verified screen (7 visible SMS, no new entries)"
+        },
+        {
+          "id": "e4060eaf",
+          "timestamp": "2026-11-15T23:36:07.475Z",
+          "sourceMode": "live-tab",
+          "newMessagesCount": 0,
+          "activeNumbersCount": 0,
+          "summary": "[Ahmad Amir] Verified screen (7 visible SMS, no new entries)"
+        },
+        {
+          "id": "1941676a",
+          "timestamp": "2026-11-15T23:35:32.906Z",
+          "sourceMode": "live-tab",
+          "newMessagesCount": 2,
+          "activeNumbersCount": 0,
+          "summary": "[Ahmad Amir] Synced 2 new SMS (7 visible)"
+        },
+        {
+          "id": "7bd8fb7c",
+          "timestamp": "2026-11-15T22:27:14.776Z",
+          "sourceMode": "attached-capture",
+          "newMessagesCount": 5,
+          "activeNumbersCount": 0,
+          "summary": "Synced 5 new SMS (5 visible on screen)"
+        }
+      ]
+    }
+  },
+  "buyerLinks": []
+}
